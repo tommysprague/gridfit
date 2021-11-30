@@ -11,15 +11,15 @@ function [bf_params, err, bf_fcn] = gridfit(data,grid,grid_params,amp_range,use_
 % uses parfor, but assumes the parallel cluster has been initialized
 % already in parent funciton
 
-if nargin < 4
+if nargin < 4 || isempty(amp_range)
     amp_range = [-inf inf];
 end
 
-if nargin < 5
+if nargin < 5 || isempty(use_gpu)
     use_gpu = 0;
 end
 
-if nargin < 6
+if nargin < 6 || isempty(use_parfor)
     use_parfor = 0;
 end
 

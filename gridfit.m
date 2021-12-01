@@ -10,6 +10,8 @@ function [bf_params, err, bf_fcn] = gridfit(data,grid,grid_params,amp_range,use_
 %
 % uses parfor, but assumes the parallel cluster has been initialized
 % already in parent funciton
+%
+% updated to return sum squared error rather than RMSE (TCS 11/30/2021)
 
 if nargin < 4 || isempty(amp_range)
     amp_range = [-inf inf];
@@ -48,7 +50,8 @@ for ii = 1:size(grid,2)
     
     allcoeffs(ii,:,:) = [grid(:,ii) myones]\data; % returns predictors(2) x nvox 
     %allerr(ii,:) = sqrt(mean((data - [grid(:,ii) myones]*squeeze(allcoeffs(ii,:,:))).^2,1));
-    allerr(ii,:) = sqrt(mean((data - [grid(:,ii) myones]*shiftdim(allcoeffs(ii,:,:),1)).^2,1));
+    %allerr(ii,:) = sqrt(mean((data - [grid(:,ii) myones]*shiftdim(allcoeffs(ii,:,:),1)).^2,1));
+    allerr(ii,:) = sum((data - [grid(:,ii) myones]*shiftdim(allcoeffs(ii,:,:),1)).^2,1); % sum squared error
     
 end
 
@@ -59,7 +62,8 @@ else
         end
         allcoeffs(ii,:,:) = [grid(:,ii) myones]\data; % returns predictors(2) x nvox
         %allerr(ii,:) = sqrt(mean((data - [grid(:,ii) myones]*squeeze(allcoeffs(ii,:,:))).^2,1));
-        allerr(ii,:) = sqrt(mean((data - [grid(:,ii) myones]*shiftdim(allcoeffs(ii,:,:),1)).^2,1));
+        %allerr(ii,:) = sqrt(mean((data - [grid(:,ii) myones]*shiftdim(allcoeffs(ii,:,:),1)).^2,1));
+        allerr(ii,:) = sum((data - [grid(:,ii) myones]*shiftdim(allcoeffs(ii,:,:),1)).^2,1); % sum squared error
         
     end
 

@@ -46,7 +46,8 @@ parfor vv = 1:size(data,2)
     d = data(:,vv);
     
     % here's the error function (RMSE)
-    err_fcn = @(p) sqrt(mean( (   (p(end-1)*fitfcn(evalpts,p)+p(end)) - d).^2 ) );
+    % err_fcn = @(p) sqrt(mean( (   (p(end-1)*fitfcn(evalpts,p)+p(end)) - d).^2 ) );
+    err_fcn = @(p) sum(     ( (p(end-1)*fitfcn(evalpts,p)+p(end) ) - d).^2 ) ;
 
     
     [bf_ft(vv,:),bf_err(vv),ex_flag(vv)] = fminsearch(err_fcn,bf_grid(vv,:));

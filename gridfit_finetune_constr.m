@@ -28,7 +28,7 @@ function [bf_ft,bf_err,bf_fcn,ex_flag] = gridfit_finetune_constr(data,fitfcn,bf_
 
 
 
-if nargin < 5
+if nargin < 5 || isempty(constr)
     constr = [-1*inf(1,size(bf_grid,2)); inf(1,size(bf_grid,2))];
 end
 
@@ -64,53 +64,54 @@ base_idx = size(bf_grid,2);
 options = optimset('fmincon');
 options.Display = 'off';
 
-if use_parfor == 0 
-
-%parfor vv = 1:size(data,2)
-for vv = 1:size(data,2)
+tic;
+if use_parfor == 0
     
-    if mod(vv,10)==0
-        fprintf('Voxel %i\n',vv);
+    for vv = 1:size(data,2)
+        
+        if mod(vv,10)==0
+            fprintf('Voxel %i\n',vv);
+        end
+        
+        d = data(:,vv).';
+        
+        % here's the error function (RMSE)
+        % err_fcn = @(p) sqrt(mean( (   (p(end-1)*fitfcn(evalpts,p)+p(end)) - d).^2 ) );
+        err_fcn = @(p) sum(     ( (p(end-1)*fitfcn(evalpts,p)+p(end) ) - d).^2, 2 ) ;
+        
+        %[bf_ft(vv,:),bf_err(vv),ex_flag(vv)] = fminsearch(err_fcn,bf_grid(vv,:));
+        
+        [bf_ft(vv,:),bf_err(vv),ex_flag(vv)] = fmincon(err_fcn,double(bf_grid(vv,:)),[],[],[],[],LB(vv,:),UB(vv,:),[],options);
+        this_fits = bf_ft(vv,:);
+        this_amp = this_fits(amp_idx);
+        this_base = this_fits(base_idx);
+        bf_fcn(:,vv) = this_amp*fitfcn(evalpts,bf_ft(vv,:)) + this_base;
+        
     end
-    
-    d = data(:,vv);
-    
-    % here's the error function (RMSE)
-    err_fcn = @(p) sqrt(mean( (   (p(end-1)*fitfcn(evalpts,p)+p(end)) - d).^2 ) );
-
-    
-    %[bf_ft(vv,:),bf_err(vv),ex_flag(vv)] = fminsearch(err_fcn,bf_grid(vv,:));
-    
-    [bf_ft(vv,:),bf_err(vv),ex_flag(vv)] = fmincon(err_fcn,bf_grid(vv,:),[],[],[],[],LB(vv,:),UB(vv,:),[],options);
-    this_fits = bf_ft(vv,:);
-    this_amp = this_fits(amp_idx);
-    this_base = this_fits(base_idx);
-    bf_fcn(:,vv) = this_amp*fitfcn(evalpts,bf_ft(vv,:)) + this_base;
-    
-end
 else
     parfor vv = 1:size(data,2)
-    
-    if mod(vv,10)==0
-        fprintf('Voxel %i\n',vv);
+        
+%         if mod(vv,10)==0
+%             fprintf('Voxel %i\n',vv);
+%         end
+%         
+        d = data(:,vv).';
+        
+        % here's the error function (RMSE)
+        %    err_fcn = @(p) sqrt(mean( (   (p(end-1)*fitfcn(evalpts,p)+p(end)) - d).^2 ) );
+        err_fcn = @(p) sum(     ( (p(end-1)*fitfcn(evalpts,p)+p(end) ) - d).^2, 2 ) ;
+        
+        
+        %[bf_ft(vv,:),bf_err(vv),ex_flag(vv)] = fminsearch(err_fcn,bf_grid(vv,:));
+        
+        [bf_ft(vv,:),bf_err(vv),ex_flag(vv)] = fmincon(err_fcn,double(bf_grid(vv,:)),[],[],[],[],LB(vv,:),UB(vv,:),[],options);
+        this_fits = bf_ft(vv,:);
+        this_amp = this_fits(amp_idx);
+        this_base = this_fits(base_idx);
+        bf_fcn(:,vv) = this_amp*fitfcn(evalpts,bf_ft(vv,:)) + this_base;
+        
     end
-    
-    d = data(:,vv);
-    
-    % here's the error function (RMSE)
-    err_fcn = @(p) sqrt(mean( (   (p(end-1)*fitfcn(evalpts,p)+p(end)) - d).^2 ) );
-
-    
-    %[bf_ft(vv,:),bf_err(vv),ex_flag(vv)] = fminsearch(err_fcn,bf_grid(vv,:));
-    
-    [bf_ft(vv,:),bf_err(vv),ex_flag(vv)] = fmincon(err_fcn,bf_grid(vv,:),[],[],[],[],LB(vv,:),UB(vv,:),[],options);
-    this_fits = bf_ft(vv,:);
-    this_amp = this_fits(amp_idx);
-    this_base = this_fits(base_idx);
-    bf_fcn(:,vv) = this_amp*fitfcn(evalpts,bf_ft(vv,:)) + this_base;
-    
 end
-end
-
+toc;
 
 return
